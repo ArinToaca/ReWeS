@@ -83,12 +83,29 @@ def insert_by_esp():
     return 'OK'
 
 
+@app.route('/delete', methods=['DELETE'])
+@cross_origin()
+def delete_by_id():
+    '''method when deleting an entry'''
+    db = get_db()
+    db.execute('delete from weather_history where weather_id == ?',
+               [request.args.get('weather_id')])
+    db.commit()
+    return 'OK'
+
+
 @app.route('/weather_history', methods=['GET'])
 @cross_origin()
 def get_by_frontend():
     '''method called by the frontend'''
     db = get_db()
-    cursor = db.execute('select * from weather_history')
+    if request.args.get('limit', False):
+        cursor = db.execute('select * from weather_history order by timestamp'
+                            'desc limit ?', [request.args.get('limit')])
+    else:
+        cursor = db.execute('select * from weather_history order by timestamp '
+                            'desc')
+
     columns = [column[0] for column in cursor.description]
     results = []
     for row in cursor.fetchall():
