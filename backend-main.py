@@ -5,8 +5,8 @@ import calendar
 import sqlite3
 import time
 import statistics
-from dew_point import dew_point_calculate
-from dew_point import compare
+from calculations import compare
+from meteocalc import dew_point, heat_index, Temp
 from flask import jsonify
 from flask_cors import CORS, cross_origin
 from flask import send_from_directory
@@ -75,13 +75,18 @@ def insert_by_esp():
     db = get_db()
     print("JSON %s" % request.get_json())
     request_dict = request.get_json()
-    values = [calendar.timegm(time.gmtime()), request_dict['temperature'],
-              request_dict['pressure'], request_dict['humidity'],
-              dew_point_calculate(request_dict['humidity'],
-              request_dict['temperature'])]
+    values = [calendar.timegm(time.gmtime()),
+              request_dict['temperature'],
+              request_dict['pressure'],
+              request_dict['humidity'],
+              dew_point(Temp(request_dict['temperature'], 'c'),
+              request_dict['humidity']).c,
+              heat_index(Temp(request_dict['temperature'], 'c'),
+                         request_dict['humidity']).c]
 
     db.execute('insert into weather_history (timestamp, temperature, '
-               'pressure, humidity, dew_point) values (?,?,?,?,?)', values)
+               'pressure, humidity, dew_point, heat_index) values '
+               '(?,?,?,?,?,?)', values)
     db.commit()
     return 'OK'
 
@@ -140,7 +145,7 @@ def get_by_frontend():
     '''method called by the frontend'''
     db = get_db()
     if request.args.get('limit', False):
-        cursor = db.execute('select * from weather_history order by timestamp'
+        cursor = db.execute('select * from weather_history order by timestamp '
                             'desc limit ?', [request.args.get('limit')])
     else:
         cursor = db.execute('select * from weather_history order by timestamp '
