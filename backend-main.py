@@ -1,11 +1,12 @@
 import os
 import datetime
-import string
-import random
-import base64
 import sys
+import calendar
 import sqlite3
 import time
+import statistics
+from dew_point import dew_point_calculate
+from dew_point import compare
 from flask import jsonify
 from flask_cors import CORS, cross_origin
 from flask import send_from_directory
@@ -74,11 +75,13 @@ def insert_by_esp():
     db = get_db()
     print("JSON %s" % request.get_json())
     request_dict = request.get_json()
-    values = [int(time.time()), request_dict['temperature'],
-              request_dict['pressure'], request_dict['humidity']]
+    values = [calendar.timegm(time.gmtime()), request_dict['temperature'],
+              request_dict['pressure'], request_dict['humidity'],
+              dew_point_calculate(request_dict['humidity'],
+              request_dict['temperature'])]
 
     db.execute('insert into weather_history (timestamp, temperature, '
-               'pressure, humidity) values (?,?,?,?)', values)
+               'pressure, humidity, dew_point) values (?,?,?,?,?)', values)
     db.commit()
     return 'OK'
 
@@ -88,10 +91,47 @@ def insert_by_esp():
 def delete_by_id():
     '''method when deleting an entry'''
     db = get_db()
-    db.execute('delete from weather_history where weather_id == ?',
-               [request.args.get('weather_id')])
+    if request.args.get('to_date'):
+        db.execute('delete from weather_history where timestamp >= ? '
+                   'and timestamp <= ? ',
+                   [request.args.get('from_date'),
+                    request.args.get('to_date')])
+    else:
+        db.execute('delete from weather_history where timestamp >= ? '
+                   [request.args.get('from_date')])
     db.commit()
     return 'OK'
+
+
+@app.route('/tendency', methods=['GET'])
+@cross_origin()
+def get_tendency():
+    '''method getting tendency'''
+    db = get_db()
+    if request.args.get('limit', False):
+        cursor = db.execute('select * from weather_history order by timestamp'
+                            'desc limit ?', [request.args.get('limit')])
+    else:
+        cursor = db.execute('select * from weather_history order by timestamp '
+                            'desc limit 3')
+
+    columns = [column[0] for column in cursor.description]
+    results = []
+    for row in cursor.fetchall():
+        results.append(dict(zip(columns, row)))
+    temp_mean = statistics.mean([el['temperature'] for el in results[1:]])
+    hum_mean = statistics.mean([el['humidity'] for el in results[1:]])
+    pressure_mean = statistics.mean([el['pressure'] for el in results[1:]])
+    diff_temp = compare(results[0]['temperature'], temp_mean)
+    diff_pressure = compare(results[0]['pressure'], pressure_mean)
+    diff_humidity = compare(results[0]['humidity'], hum_mean)
+
+    final_result = dict()
+    final_result['temperature_tendency'] = diff_temp
+    final_result['pressure_tendency'] = diff_pressure
+    final_result['humidity_tendency'] = diff_humidity
+
+    return jsonify(final_result)
 
 
 @app.route('/weather_history', methods=['GET'])
@@ -126,4 +166,4 @@ if __name__ == '__main__':
         print('running app...')
         app.run(host='0.0.0.0')
     else:
-        raise ValueError("incorrect nr of args!")
+        raise ValueError("icorrect nr of args!")

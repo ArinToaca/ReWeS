@@ -4,5 +4,6 @@ create table weather_history (
     timestamp integer NOT NULL,
     temperature integer NOT NULL,
     pressure integer NOT NULL,
-    humidity integer NOT NULL
+    humidity integer NOT NULL,
+    dew_point integer NOT NULL
 );
