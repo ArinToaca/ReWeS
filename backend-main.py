@@ -136,15 +136,19 @@ def cloud():
     '''cloud_coverage'''
     db = get_db()
     if request.method == 'GET':
-        cursor = db.execute('select * from cloud_history')
+        if request.args.get('limit', False):
+            cursor = db.execute('select * from cloud_history order by '
+                                'timestamp desc limit ?',
+                                [request.args.get('limit')])
+        else:
+            cursor = db.execute('select * from cloud_history order by '
+                                'timestamp desc ')
+
         columns = [column[0] for column in cursor.description]
         results = []
         for row in cursor.fetchall():
             results.append(dict(zip(columns, row)))
         return jsonify(results)
-
-        pass
-    db.commit()
     return 'OK'
 
 
