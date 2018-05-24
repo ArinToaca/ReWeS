@@ -91,10 +91,14 @@ def insert_by_esp():
                         request_dict['humidity']).c,
               heat_index(Temp(request_dict['temperature'], 'c'),
                          request_dict['humidity']).c]
+    cloudiness = request_dict['cloud_coverage']
+    cloudiness = int(cloudiness[1:])
 
     db.execute('insert into weather_history (timestamp, temperature, '
                'pressure, humidity, dew_point, heat_index) values '
                '(?,?,?,?,?,?)', values)
+    db.execute('insert into cloud_history (timestamp, cloud_coverage) '
+               'values (?, ?)', [values[0], cloudiness])
     db.commit()
     return 'OK'
 
@@ -116,7 +120,7 @@ def delete_by_id():
     return 'OK'
 
 
-@app.route('/cloud', methods=['GET', 'POST'])
+@app.route('/cloud', methods=['GET'])
 @cross_origin()
 def cloud():
     '''cloud_coverage'''
