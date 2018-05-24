@@ -95,6 +95,12 @@ def insert_by_esp():
     db.execute('insert into weather_history (timestamp, temperature, '
                'pressure, humidity, dew_point, heat_index) values '
                '(?,?,?,?,?,?)', values)
+
+    if request_dict.get('cloud_coverage', False):
+        db.execute('insert into cloud_history (cloud_coverage,timestamp)'
+                   'values (?,?)',
+                   [values['cloud_coverage'][1:],
+                    calendar.timegm(time.gmtime())])
     db.commit()
     return 'OK'
 
@@ -127,12 +133,7 @@ def delete_by_id():
 def cloud():
     '''cloud_coverage'''
     db = get_db()
-    values = request.get_json()
-    if request.method == 'POST':
-        db.execute('insert into cloud_history (cloud_coverage,timestamp)'
-                   'values (?,?)',
-                   [values['cloud_coverage'], calendar.timegm(time.gmtime())])
-    elif request.method == 'GET':
+    if request.method == 'GET':
         cursor = db.execute('select * from cloud_history')
         columns = [column[0] for column in cursor.description]
         results = []
