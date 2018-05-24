@@ -11,7 +11,7 @@ from flask import jsonify
 from flask_cors import CORS, cross_origin
 from flask import send_from_directory
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-     render_template, flash
+    render_template, flash
 app = Flask(__name__)  # create the application instance :)
 app.config.from_object(__name__)  # load config from this file , flaskr.py
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -40,6 +40,14 @@ def init_db():
     with app.open_resource('schema.sql', mode='r') as f:
         db.cursor().executescript(f.read())
     print("executed schema.sql successfully.")
+    db.commit()
+
+
+def init_cloud_db():
+    db = get_db()
+    with app.open_resource('schema_cloud.sql', mode='r') as f:
+        db.cursor().executescript(f.read())
+    print("executed schema_cloud.sql successfully.")
     db.commit()
 
 
@@ -80,7 +88,7 @@ def insert_by_esp():
               request_dict['pressure'],
               request_dict['humidity'],
               dew_point(Temp(request_dict['temperature'], 'c'),
-              request_dict['humidity']).c,
+                        request_dict['humidity']).c,
               heat_index(Temp(request_dict['temperature'], 'c'),
                          request_dict['humidity']).c]
 
@@ -104,6 +112,29 @@ def delete_by_id():
     else:
         db.execute('delete from weather_history where timestamp >= ? '
                    [request.args.get('from_date')])
+    db.commit()
+    return 'OK'
+
+
+@app.route('/cloud', methods=['GET', 'POST'])
+@cross_origin()
+def cloud():
+    '''cloud_coverage'''
+    db = get_db()
+    values = request.get_json()
+    if request.method == 'POST':
+        db.execute('insert into cloud_history (cloud_coverage,timestamp)'
+                   'values (?,?)',
+                   [values['cloud_coverage'], calendar.timegm(time.gmtime())])
+    elif request.method == 'GET':
+        cursor = db.execute('select * from cloud_history')
+        columns = [column[0] for column in cursor.description]
+        results = []
+        for row in cursor.fetchall():
+            results.append(dict(zip(columns, row)))
+        return jsonify(results)
+
+        pass
     db.commit()
     return 'OK'
 
@@ -170,5 +201,8 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'run':
         print('running app...')
         app.run(host='0.0.0.0')
+    elif sys.argv[1] == 'cloudinit':
+        with app.app_context():
+            init_cloud_db()
     else:
         raise ValueError("icorrect nr of args!")
