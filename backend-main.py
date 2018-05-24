@@ -97,9 +97,11 @@ def insert_by_esp():
                '(?,?,?,?,?,?)', values)
 
     if request_dict.get('cloud_coverage', False):
+        cloudy = request_dict['cloud_coverage']
+        cloudy = str(cloudy)[1:]
         db.execute('insert into cloud_history (cloud_coverage,timestamp)'
                    'values (?,?)',
-                   [values['cloud_coverage'][1:],
+                   [cloudy,
                     calendar.timegm(time.gmtime())])
     db.commit()
     return 'OK'
