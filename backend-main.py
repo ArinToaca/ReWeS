@@ -51,6 +51,22 @@ def init_cloud_db():
     db.commit()
 
 
+def init_rain_db():
+    db = get_db()
+    with app.open_resource('schema_rain.sql', mode='r') as f:
+        db.cursor().executescript(f.read())
+    print("executed schema_rain.sql successfully.")
+    db.commit()
+
+
+def init_wind_db():
+    db = get_db()
+    with app.open_resource('schema_wind.sql', mode='r') as f:
+        db.cursor().executescript(f.read())
+    print("executed schema_rain.sql successfully.")
+    db.commit()
+
+
 def connect_db():
     """Connects to the specific database."""
     rv = sqlite3.connect(app.config['DATABASE'])
@@ -103,6 +119,21 @@ def insert_by_esp():
                    'values (?,?)',
                    [cloudy,
                     calendar.timegm(time.gmtime())])
+
+    if request_dict.get('rain', False):
+        rain = request_dict['rain']
+        db.execute('insert into cloud_history (rain,timestamp)'
+                   'values (?,?)',
+                   [rain,
+                    calendar.timegm(time.gmtime())])
+
+    if request_dict.get('wind_direction', False):
+        wind_direction = request_dict['wind_direction']
+        db.execute('insert into wind_history (wind_direction ,timestamp)'
+                   'values (?,?)',
+                   [wind_direction,
+                    calendar.timegm(time.gmtime())])
+
     db.commit()
     return 'OK'
 
@@ -142,6 +173,50 @@ def cloud():
                                 [request.args.get('limit')])
         else:
             cursor = db.execute('select * from cloud_history order by '
+                                'timestamp desc ')
+
+        columns = [column[0] for column in cursor.description]
+        results = []
+        for row in cursor.fetchall():
+            results.append(dict(zip(columns, row)))
+        return jsonify(results)
+    return 'OK'
+
+
+@app.route('/rain', methods=['GET'])
+@cross_origin()
+def rain():
+    '''rain'''
+    db = get_db()
+    if request.method == 'GET':
+        if request.args.get('limit', False):
+            cursor = db.execute('select * from rain_history order by '
+                                'timestamp desc limit ?',
+                                [request.args.get('limit')])
+        else:
+            cursor = db.execute('select * from rain_history order by '
+                                'timestamp desc ')
+
+        columns = [column[0] for column in cursor.description]
+        results = []
+        for row in cursor.fetchall():
+            results.append(dict(zip(columns, row)))
+        return jsonify(results)
+    return 'OK'
+
+
+@app.route('/wind', methods=['GET'])
+@cross_origin()
+def wind():
+    '''rain'''
+    db = get_db()
+    if request.method == 'GET':
+        if request.args.get('limit', False):
+            cursor = db.execute('select * from wind_history order by '
+                                'timestamp desc limit ?',
+                                [request.args.get('limit')])
+        else:
+            cursor = db.execute('select * from wind_history order by '
                                 'timestamp desc ')
 
         columns = [column[0] for column in cursor.description]
@@ -217,5 +292,11 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'cloudinit':
         with app.app_context():
             init_cloud_db()
+    elif sys.argv[1] == 'raininit':
+        with app.app_context():
+            init_rain_db()
+    elif sys.argv[1] == 'windinit':
+        with app.app_context():
+            init_wind_db()
     else:
         raise ValueError("icorrect nr of args!")
