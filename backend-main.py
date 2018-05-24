@@ -106,7 +106,7 @@ def insert_by_esp():
 @app.route('/shutdown_raspi', methods=['GET'])
 @cross_origin()
 def raspi_shutdown():
-    return 0
+    return 'yes'
 
 
 @app.route('/delete', methods=['DELETE'])
