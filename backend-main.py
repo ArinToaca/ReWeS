@@ -154,7 +154,7 @@ def insert_by_esp():
                    [cloudy,
                     calendar.timegm(time.gmtime())])
 
-    if request_dict.get('rain', False):
+    if request_dict.get('rain', False) is not False:
         rain = request_dict['rain']
         db.execute('insert into rain_history (rain,timestamp)'
                    'values (?,?)',
