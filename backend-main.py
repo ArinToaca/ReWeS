@@ -122,7 +122,7 @@ def insert_by_esp():
 
     if request_dict.get('rain', False):
         rain = request_dict['rain']
-        db.execute('insert into cloud_history (rain,timestamp)'
+        db.execute('insert into rain_history (rain,timestamp)'
                    'values (?,?)',
                    [rain,
                     calendar.timegm(time.gmtime())])
