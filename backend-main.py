@@ -159,7 +159,7 @@ def insert_by_esp():
 
     if request_dict.get('wind', False):
         vector = request_dict['wind'].split(',')
-        wind_speed = int(length(vector, [0, 0]))
+        wind_speed = int(length(vector))
         wind_direction = int(inner_angle(vector, [0, 0]))
 
         db.execute('insert into wind_history (wind_direction, wind_speed, '
