@@ -5,6 +5,8 @@ import calendar
 import sqlite3
 import time
 import statistics
+from math import atan
+from math import degrees
 from math import acos
 from math import sqrt
 from math import pi
@@ -42,9 +44,10 @@ def determinant(v, w):
 
 
 def inner_angle(v, w):
-    cosx = dot_product(v, w)/(length(v)*length(w))
-    rad = acos(cosx)  # in radians
-    return rad*180/pi  # returns degrees
+    (dx, dy) = (v[0] - w[0], v[1] - w[1])
+    angle = degrees(atan(float(dy)/float(dx)))
+    if angle < 0:
+        angle += 180
 
 
 def angle_clockwise(A, B):
