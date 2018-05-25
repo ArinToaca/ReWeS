@@ -160,7 +160,7 @@ def insert_by_esp():
     if request_dict.get('wind', False):
         vector = request_dict['wind']
         vector = vector[1:]
-        vector = vector.split('\n')
+        vector = vector.split(',')
         vector = [float(el) for el in vector]
         wind_speed = int(length(vector))
         wind_direction = int(inner_angle(vector, [0, 0]))
