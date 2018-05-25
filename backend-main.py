@@ -129,9 +129,10 @@ def insert_by_esp():
 
     if request_dict.get('wind_direction', False):
         wind_direction = request_dict['wind_direction']
-        db.execute('insert into wind_history (wind_direction ,timestamp)'
-                   'values (?,?)',
-                   [wind_direction,
+        wind_speed = request_dict['wind_speed']
+        db.execute('insert into wind_history (wind_direction, wind_speed, '
+                   'timestamp) values (?,?,?)',
+                   [wind_direction, wind_speed,
                     calendar.timegm(time.gmtime())])
 
     db.commit()
