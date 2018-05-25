@@ -5,6 +5,9 @@ import calendar
 import sqlite3
 import time
 import statistics
+from math import acos
+from math import sqrt
+from math import pi
 from calculations import compare
 from meteocalc import dew_point, heat_index, Temp
 from flask import jsonify
@@ -24,6 +27,33 @@ app.config.update(dict(
     PASSWORD='default'
 ))
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
+
+
+def length(v):
+    return sqrt(v[0]**2+v[1]**2)
+
+
+def dot_product(v, w):
+    return v[0]*w[0]+v[1]*w[1]
+
+
+def determinant(v, w):
+    return v[0]*w[1]-v[1]*w[0]
+
+
+def inner_angle(v, w):
+    cosx = dot_product(v, w)/(length(v)*length(w))
+    rad = acos(cosx)  # in radians
+    return rad*180/pi  # returns degrees
+
+
+def angle_clockwise(A, B):
+    inner = inner_angle(A, B)
+    det = determinant(A, B)
+    if det < 0:  # this is a property of the det. If the det < 0 then B is clockwise of A
+        return inner
+    else:  # if the det > 0 then A is immediately clockwise of B
+        return 360-inner
 
 
 def epoch_to_iso(seconds):
@@ -127,9 +157,11 @@ def insert_by_esp():
                    [rain,
                     calendar.timegm(time.gmtime())])
 
-    if request_dict.get('wind_direction', False):
-        wind_direction = request_dict['wind_direction']
-        wind_speed = request_dict['wind_speed']
+    if request_dict.get('wind', False):
+        vector = request_dict['wind'].split(',')
+        wind_speed = int(length(vector, [0, 0]))
+        wind_direction = int(inner_angle(vector, [0, 0]))
+
         db.execute('insert into wind_history (wind_direction, wind_speed, '
                    'timestamp) values (?,?,?)',
                    [wind_direction, wind_speed,
