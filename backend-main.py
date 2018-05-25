@@ -48,6 +48,7 @@ def inner_angle(v, w):
     angle = degrees(atan(float(dy)/float(dx)))
     if angle < 0:
         angle += 180
+    return angle
 
 
 def angle_clockwise(A, B):
